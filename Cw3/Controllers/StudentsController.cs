@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Cw3.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -30,6 +31,15 @@ namespace Cw3.Controllers
             }
 
             return NotFound("Student with given ID not found");
+        }
+
+        [HttpPost]
+        public IActionResult CreateStudent(Student student)
+        {
+            //... add to DB
+            //... generate index number
+            student.IndexNumber = $"s{new Random().Next(1, 20000)}";
+            return Ok(student);
         }
     }
 }
