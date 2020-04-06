@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Data;
+using System.Data.SqlClient;
 using Cw3.DAL;
 using Cw3.Models;
 using Microsoft.AspNetCore.Http;
@@ -23,7 +25,32 @@ namespace Cw3.Controllers
         [HttpGet]
         public IActionResult GetStudents(string orderBy)
         {
-            return Ok(_dbService.GetStudents());
+            var students = new List<Student>();
+
+            using (var connection = new SqlConnection("Data Source=db-mssql;Initial Catalog=2019SBD;Integrated Security=True"))
+            using (var command = new SqlCommand())
+            {
+                command.Connection = connection;
+                command.CommandText = @"SELECT S.IndexNumber, S.FirstName, S.LastName, S.BirthDate, SDS.Name as 'SDSName', E.Semester
+                                        FROM Student S
+                                        INNER JOIN Enrollment E on S.IdEnrollment = E.IdEnrollment
+                                        INNER JOIN Studies SDS on E.IdStudy = SDS.IdStudy;";
+                connection.Open();
+                var dataReader = command.ExecuteReader();
+                while (dataReader.Read())
+                {
+                    var student = new Student();
+                    student.IndexNumber = dataReader["IndexNumber"].ToString();
+                    student.FirstName = dataReader["FirstName"].ToString();
+                    student.LastName = dataReader["LastName"].ToString();
+                    student.BirthDate = DateTime.Parse(dataReader["BirthDate"].ToString());
+                    student.Course = dataReader["SDSName"].ToString();
+                    student.Semester = int.Parse(dataReader["Semester"].ToString());
+                    students.Add(student);
+                }
+            }
+
+            return Ok(students);
         }
 
         [HttpGet("{id}")]
@@ -33,7 +60,7 @@ namespace Cw3.Controllers
             {
                 return Ok("Kowalski");
             }
-            else if (id ==2 )
+            else if (id == 2)
             {
                 return Ok("Malewski");
             }
