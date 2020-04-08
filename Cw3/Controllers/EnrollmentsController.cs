@@ -24,7 +24,9 @@ namespace Cw3.Controllers
                 command.CommandText = @"SELECT E.IdEnrollment, E.Semester, E.StartDate
                                         FROM Enrollment E
                                         INNER JOIN Student S on S.IdEnrollment = E.IdEnrollment
-                                        WHERE S.IndexNumber = " + id + ";";
+                                        WHERE S.IndexNumber = @id;";
+                command.Parameters.AddWithValue("id", id);
+
                 connection.Open();
                 var dataReader = command.ExecuteReader();
                 while (dataReader.Read())
