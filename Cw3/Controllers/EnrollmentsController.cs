@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
@@ -139,7 +140,7 @@ namespace Cw3.Controllers
                         reader.Close();
                     }
                 } 
-                catch (Exception e)
+                catch (Exception)
                 {
                     transaction.Rollback();
                     return BadRequest("Cannot create or read enrollment");
@@ -153,12 +154,13 @@ namespace Cw3.Controllers
                     var reader = command.ExecuteReader();
                     if (reader.Read())
                     {
+                        reader.Close();
                         transaction.Rollback();
                         return BadRequest("Student with the given ID already exists");
                     }
                     reader.Close();
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     transaction.Rollback();
                     return BadRequest("Cannot read student");
@@ -180,7 +182,7 @@ namespace Cw3.Controllers
                     response.Semester = enrollment.Semester;
                     response.StartDate = enrollment.StartDate;
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     transaction.Rollback();
                     return BadRequest("Cannot enroll student");
@@ -189,7 +191,104 @@ namespace Cw3.Controllers
                 transaction.Commit();
             }
 
-            return Created("" ,response);
+            return Created("", response);
+        }
+
+        [HttpPost("promotions")]
+        public IActionResult PromoteStudent(PromoteStudentsRequest request)
+        {
+            PromoteStudentsResponse response = new PromoteStudentsResponse();
+            Enrollment enrollment = null;
+
+            // Check if studies exist
+            using (var connection = new SqlConnection("Data Source=db-mssql;Initial Catalog=2019SBD;Integrated Security=True"))
+            using (var command = new SqlCommand())
+            {
+                try
+                {
+                    command.Connection = connection;
+                    connection.Open();
+
+                    command.CommandText = @"SELECT TOP 1 e.IdEnrollment, e.Semester, e.IdStudy, e.StartDate FROM Enrollment e 
+                                            INNER JOIN Studies s ON s.IdStudy = e.IdStudy 
+                                            WHERE e.Semester = @semester AND s.Name = @name 
+                                            ORDER BY e.StartDate DESC;";
+                    command.Parameters.AddWithValue("semester", request.Semester);
+                    command.Parameters.AddWithValue("name", request.Studies);
+                    var reader = command.ExecuteReader();
+                    reader.Read();
+
+                    enrollment = new Enrollment();
+                    enrollment.IdEnrollment = (int)reader["IdEnrollment"];
+                    enrollment.Course = (int)reader["IdStudy"];
+                    enrollment.Semester = (int)reader["Semester"];
+                    enrollment.StartDate = DateTime.Parse(reader["StartDate"].ToString());
+
+                    reader.Close();
+                }
+                catch (Exception)
+                {
+                    enrollment = null;
+                }
+            }
+
+            if (enrollment == null)
+            {
+                return NotFound("Enrollment does not exist");
+            }
+
+            using (var connection = new SqlConnection("Data Source=db-mssql;Initial Catalog=2019SBD;Integrated Security=True"))
+            using (var command = new SqlCommand())
+            {
+                connection.Open();
+                var transaction = connection.BeginTransaction();
+
+                command.Connection = connection;
+                command.Transaction = transaction;
+
+                // Execute procedure
+                try
+                {
+                    command.CommandText = "[s19682].[PromoteStudents]";
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@IdStudy", enrollment.Course);
+                    command.Parameters.AddWithValue("@CurrentSemester", enrollment.Semester);
+
+                    command.ExecuteNonQuery();
+                }
+                catch (Exception e)
+                {
+                    transaction.Rollback();
+                    return BadRequest("Cannot promote students");
+                }
+
+                // Get the new enrollment
+                try
+                {
+                    command.CommandText = @"SELECT TOP 1 IdEnrollment, Semester, IdStudy, StartDate FROM Enrollment 
+                                            WHERE Semester = @CurrentSemester + 1 AND IdStudy = @IdStudy 
+                                            ORDER BY StartDate DESC;";
+                    command.CommandType = CommandType.Text;
+                    var reader = command.ExecuteReader();
+                    reader.Read();
+                    
+                    response.IdEnrollment = (int)reader["IdEnrollment"];
+                    response.Course = request.Studies;
+                    response.Semester = (int)reader["Semester"];
+
+                    reader.Close();
+                } 
+                catch (Exception e)
+                {
+                    transaction.Rollback();
+                    return BadRequest("Cannot get the new enrollment");
+                }
+
+                transaction.Commit();
+            }
+
+            return Created("", response);
         }
     }
 }
+
