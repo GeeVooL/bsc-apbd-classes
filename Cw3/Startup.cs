@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using Cw3.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -31,7 +33,7 @@ namespace Cw3
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IStudentsDbService dbService)
         {
             if (env.IsDevelopment())
             {
@@ -39,6 +41,29 @@ namespace Cw3
             }
 
             app.UseHttpsRedirection();
+
+            // Check if the user is a student
+            app.Use(async (context, next) => {
+                context.Request.Headers.TryGetValue("Index", out var studentIndex);
+
+                if (string.IsNullOrEmpty(studentIndex))
+                {
+                    context.Response.StatusCode = (int) HttpStatusCode.Unauthorized;
+                    await context.Response.WriteAsync("Index number is missing.");
+                    return;
+                }
+
+                var student = dbService.GetStudent(studentIndex);
+
+                if (student == null)
+                {
+                    context.Response.StatusCode = (int) HttpStatusCode.Unauthorized;
+                    await context.Response.WriteAsync("Invalid index number used.");
+                    return;
+                }
+
+                await next();
+            });
 
             app.UseRouting();
 
