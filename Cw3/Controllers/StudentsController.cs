@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Data;
 using System.Data.SqlClient;
-using Cw3.DAL;
+using Cw3.Services;
 using Cw3.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -15,57 +15,30 @@ namespace Cw3.Controllers
     [ApiController]
     public class StudentsController : ControllerBase
     {
-        private readonly IDbService _dbService;
+        private readonly IStudentsDbService _dbService;
 
-        public StudentsController(IDbService dbService)
+        public StudentsController(IStudentsDbService dbService)
         {
             _dbService = dbService;
         }
 
         [HttpGet]
-        public IActionResult GetStudents(string orderBy)
+        public IActionResult GetStudents()
         {
-            var students = new List<Student>();
-
-            using (var connection = new SqlConnection("Data Source=db-mssql;Initial Catalog=2019SBD;Integrated Security=True"))
-            using (var command = new SqlCommand())
-            {
-                command.Connection = connection;
-                command.CommandText = @"SELECT S.IndexNumber, S.FirstName, S.LastName, S.BirthDate, SDS.Name as 'SDSName', E.Semester
-                                        FROM Student S
-                                        INNER JOIN Enrollment E on S.IdEnrollment = E.IdEnrollment
-                                        INNER JOIN Studies SDS on E.IdStudy = SDS.IdStudy;";
-                connection.Open();
-                var dataReader = command.ExecuteReader();
-                while (dataReader.Read())
-                {
-                    var student = new Student();
-                    student.IndexNumber = dataReader["IndexNumber"].ToString();
-                    student.FirstName = dataReader["FirstName"].ToString();
-                    student.LastName = dataReader["LastName"].ToString();
-                    student.BirthDate = DateTime.Parse(dataReader["BirthDate"].ToString());
-                    student.Course = dataReader["SDSName"].ToString();
-                    student.Semester = int.Parse(dataReader["Semester"].ToString());
-                    students.Add(student);
-                }
-            }
-
+            var students = _dbService.GetStudents();
             return Ok(students);
         }
 
-        [HttpGet("{id}")]
-        public IActionResult GetStudent(int id)
+        [HttpGet("{indexNumber}")]
+        public IActionResult GetStudent(string indexNumber)
         {
-            if (id == 1)
+            var student = _dbService.GetStudent(indexNumber);
+            if (student == null)
             {
-                return Ok("Kowalski");
-            }
-            else if (id == 2)
-            {
-                return Ok("Malewski");
+                return NotFound("Student with the given ID not found.");
             }
 
-            return NotFound("Student with given ID not found");
+            return Ok(student);
         }
 
         [HttpPost]
