@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Cw3.Middlewares;
 using Cw3.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -41,6 +42,9 @@ namespace Cw3
             }
 
             app.UseHttpsRedirection();
+
+            // Log every request to the API
+            app.UseMiddleware<LoggingMiddleware>();
 
             // Check if the user is a student
             app.Use(async (context, next) => {
