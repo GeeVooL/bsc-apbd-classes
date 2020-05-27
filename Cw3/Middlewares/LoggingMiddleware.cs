@@ -21,21 +21,26 @@ namespace Cw3.Middlewares
 
         public async Task InvokeAsync(HttpContext httpContext)
         {
-            using (var reader = new StreamReader(httpContext.Request.Body))
+            var request = httpContext.Request;
+            request.EnableBuffering();
+
+            using (var reader = new StreamReader(request.Body, Encoding.UTF8, true, 1024, true))
             {
                 var logBuilder = new StringBuilder();
                 logBuilder.Append('[');
                 logBuilder.Append(DateTime.Now);
                 logBuilder.Append("] ");
-                logBuilder.Append(httpContext.Request.Method);
+                logBuilder.Append(request.Method);
                 logBuilder.Append(' ');
-                logBuilder.Append(httpContext.Request.Path);
-                logBuilder.Append(httpContext.Request.QueryString.Value);
+                logBuilder.Append(request.Path);
+                logBuilder.Append(request.QueryString.Value);
                 logBuilder.Append('\n');
                 logBuilder.Append(await reader.ReadToEndAsync());
 
                 await File.AppendAllTextAsync(LogPath, logBuilder.ToString());
             }
+
+            request.Body.Position = 0;
 
             await _next(httpContext);
         }

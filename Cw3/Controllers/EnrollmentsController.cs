@@ -8,6 +8,7 @@ using Cw3.DTOs.Requests;
 using Cw3.DTOs.Responses;
 using Cw3.Models;
 using Cw3.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Cw3.Controllers
@@ -16,9 +17,9 @@ namespace Cw3.Controllers
     [ApiController]
     public class EnrollmentsController : ControllerBase
     {
-        private readonly IStudentsDbService _dbService;
+        private readonly IDbService _dbService;
 
-        public EnrollmentsController(IStudentsDbService dbService)
+        public EnrollmentsController(IDbService dbService)
         {
             _dbService = dbService;
         }
@@ -37,6 +38,7 @@ namespace Cw3.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "employee")]
         public IActionResult EnrollStudent(EnrollStudentRequest request)
         {
             var student = new Student
@@ -77,6 +79,7 @@ namespace Cw3.Controllers
         }
 
         [HttpPost("promotions")]
+        [Authorize(Roles = "employee")]
         public IActionResult PromoteStudent(PromoteStudentsRequest request)
         {
             var enrollment = _dbService.GetLatestEnrollment(request.Studies, request.Semester);

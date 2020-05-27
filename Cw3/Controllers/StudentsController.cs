@@ -15,9 +15,9 @@ namespace Cw3.Controllers
     [ApiController]
     public class StudentsController : ControllerBase
     {
-        private readonly IStudentsDbService _dbService;
+        private readonly IDbService _dbService;
 
-        public StudentsController(IStudentsDbService dbService)
+        public StudentsController(IDbService dbService)
         {
             _dbService = dbService;
         }

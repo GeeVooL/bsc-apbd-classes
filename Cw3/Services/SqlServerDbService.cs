@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Cw3.Services
 {
-    public class SqlServerDbService : IStudentsDbService
+    public class SqlServerDbService : IDbService
     {
         public IEnumerable<Student> GetStudents()
         {
@@ -56,7 +56,7 @@ namespace Cw3.Services
 
                 try
                 {
-                    command.CommandText = @"SELECT s.IndexNumber, s.FirstName, s.LastName, s.BirthDate, std.Name as StdName, e.Semester as ESemester
+                    command.CommandText = @"SELECT s.IndexNumber, s.Password, s.Roles, s.FirstName, s.LastName, s.BirthDate, std.Name as StdName, e.Semester as ESemester
                                             FROM Student s
                                             INNER JOIN Enrollment e on s.IdEnrollment = e.IdEnrollment
                                             INNER JOIN Studies std on e.IdStudy = std.IdStudy
@@ -376,6 +376,84 @@ namespace Cw3.Services
             }
 
             return enrollment;
-        } 
+        }
+
+        public Auth GetAuth(string id)
+        {
+            Auth authorization = null;
+
+            using (var connection = new SqlConnection("Data Source=db-mssql;Initial Catalog=2019SBD;Integrated Security=True"))
+            using (var command = new SqlCommand())
+            {
+                connection.Open();
+                command.Connection = connection;
+
+                try
+                {
+                    command.CommandText = @"SELECT IndexNumber, Password, Salt, Roles, RefreshToken
+                                            FROM Student
+                                            WHERE IndexNumber = @indexNumber;";
+                    command.Parameters.AddWithValue("indexNumber", id);
+
+                    var reader = command.ExecuteReader();
+                    reader.Read();
+
+                    authorization = new Auth
+                    {
+                        IndexNumber = reader["IndexNumber"].ToString(),
+                        Password = reader["Password"].ToString(),
+                        Salt = reader["Salt"].ToString(),
+                        Roles = reader["Roles"].ToString().Split(","),
+                        RefreshToken = reader["RefreshToken"].ToString()
+                    };
+
+                    reader.Close();
+                }
+                catch (Exception)
+                {
+                    authorization = null;
+                }
+            }
+
+            return authorization;
+        }
+
+        public void SetPasswordHash(string id, string hash, string salt)
+        {
+            using (var connection = new SqlConnection("Data Source=db-mssql;Initial Catalog=2019SBD;Integrated Security=True"))
+            using (var command = new SqlCommand())
+            {
+                connection.Open();
+                command.Connection = connection;
+
+                command.CommandText = @"UPDATE Student
+                                        SET Password = @hash, Salt = @salt
+                                        WHERE IndexNumber = @indexNumber;";
+                command.Parameters.AddWithValue("hash", hash);
+                command.Parameters.AddWithValue("salt", salt);
+                command.Parameters.AddWithValue("indexNumber", id);
+
+                command.ExecuteNonQuery();
+            }
+        }
+
+
+        public void UpdateRefreshToken(string id, string newToken)
+        {
+            using (var connection = new SqlConnection("Data Source=db-mssql;Initial Catalog=2019SBD;Integrated Security=True"))
+            using (var command = new SqlCommand())
+            {
+                connection.Open();
+                command.Connection = connection;
+
+                command.CommandText = @"UPDATE Student
+                                        SET RefreshToken = @newToken
+                                        WHERE IndexNumber = @indexNumber;";
+                command.Parameters.AddWithValue("newToken", newToken);
+                command.Parameters.AddWithValue("indexNumber", id);
+
+                command.ExecuteNonQuery();
+            }
+        }
     }
 }
