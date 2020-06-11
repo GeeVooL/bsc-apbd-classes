@@ -5,6 +5,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Cw3.Middlewares;
+using Cw3.Models.EF;
 using Cw3.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -46,6 +47,7 @@ namespace Cw3
                         };
                     });
 
+            services.AddDbContext<ApbdDbContext>();
             services.AddSingleton<IDbService, SqlServerDbService>();
             services.AddControllers();
         }
