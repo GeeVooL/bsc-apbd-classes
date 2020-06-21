@@ -49,6 +49,16 @@ namespace EfCodeFirst.Models
                 entity.Property(e => e.LastName)
                     .IsRequired()
                     .HasMaxLength(100);
+
+                // Seed doctors table
+                var doctors = new[]
+                {
+                    new Doctor { IdDoctor=1, FirstName="Albert", LastName="Sum", Email="as@gmail.com" },
+                    new Doctor { IdDoctor=2, FirstName="Adam", LastName="Brown", Email="ab@gmail.com" },
+                    new Doctor { IdDoctor=3, FirstName="Catherine", LastName="Smith", Email="as@gmail.com" },
+                };
+
+                entity.HasData(doctors);
             });
 
             modelBuilder.Entity<Medicament>(entity =>
@@ -67,6 +77,16 @@ namespace EfCodeFirst.Models
                 entity.Property(e => e.Type)
                     .IsRequired()
                     .HasMaxLength(100);
+
+                // Seed medicaments table
+                var medicaments = new[]
+                {
+                    new Medicament { IdMedicament=1, Name="Xanax", Description="Short-acting benzodiazepine", Type="Pills" },
+                    new Medicament { IdMedicament=2, Name="Adderall", Description="Drug containing salts of amphetamine", Type="Pills" },
+                    new Medicament { IdMedicament=3, Name="Vicodin", Description="Effective pain killer", Type="Pills" },
+                };
+
+                entity.HasData(medicaments);
             });
 
             modelBuilder.Entity<Patient>(entity =>
@@ -85,6 +105,16 @@ namespace EfCodeFirst.Models
                 entity.Property(e => e.LastName)
                     .IsRequired()
                     .HasMaxLength(100);
+
+                // Seed patients table
+                var patients = new[]
+                {
+                    new Patient { IdPatient=1, FirstName="Martin", LastName="Gooseman", Birthdate=DateTime.Now },
+                    new Patient { IdPatient=2, FirstName="Luke", LastName="Krause", Birthdate=DateTime.Now },
+                    new Patient { IdPatient=3, FirstName="Kyron", LastName="Harwood", Birthdate=DateTime.Now },
+                };
+
+                entity.HasData(patients);
             });
 
             modelBuilder.Entity<Prescription>(entity =>
@@ -109,6 +139,16 @@ namespace EfCodeFirst.Models
                     .WithMany(p => p.Prescriptions)
                     .HasForeignKey(d => d.IdPatient)
                     .OnDelete(DeleteBehavior.ClientSetNull);
+
+                // Seed prescriptions table
+                var prescriptions = new[]
+                {
+                    new Prescription { IdPrescription=1, IdDoctor=1, IdPatient=1, Date=DateTime.Now, DueDate=DateTime.Now.AddDays(1) },
+                    new Prescription { IdPrescription=2, IdDoctor=2, IdPatient=2, Date=DateTime.Now, DueDate=DateTime.Now.AddDays(1) },
+                    new Prescription { IdPrescription=3, IdDoctor=3, IdPatient=3, Date=DateTime.Now, DueDate=DateTime.Now.AddDays(1) }
+                };
+
+                entity.HasData(prescriptions);
             });
 
             modelBuilder.Entity<PrescriptionMedicament>(entity =>
@@ -128,6 +168,19 @@ namespace EfCodeFirst.Models
                     .WithMany(p => p.PrescriptionMedicaments)
                     .HasForeignKey(d => d.IdPrescription)
                     .OnDelete(DeleteBehavior.ClientSetNull);
+
+                // Seed Prescription_Medicament table
+                var prescriptionMedicaments = new[]
+                {
+                    new PrescriptionMedicament { IdPrescription=1, IdMedicament=1, Details="Lorem ipsum dolor", Dose=15 },
+                    new PrescriptionMedicament { IdPrescription=1, IdMedicament=3, Details="Lorem ipsum dolor", Dose=10 },
+                    new PrescriptionMedicament { IdPrescription=2, IdMedicament=2, Details="Lorem ipsum dolor", Dose=8 },
+                    new PrescriptionMedicament { IdPrescription=2, IdMedicament=3, Details="Lorem ipsum dolor", Dose=6 },
+                    new PrescriptionMedicament { IdPrescription=3, IdMedicament=1, Details="Lorem ipsum dolor", Dose=3 },
+                    new PrescriptionMedicament { IdPrescription=3, IdMedicament=2, Details="Lorem ipsum dolor", Dose=1 },
+                };
+
+                entity.HasData(prescriptionMedicaments);
             });
         }
     }
