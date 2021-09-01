@@ -1,1 +1,1 @@
-Michał Dziewulski 19c s19682
+A repo with projects for APBD classes.
